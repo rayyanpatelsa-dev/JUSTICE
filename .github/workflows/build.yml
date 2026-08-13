@@ -11,10 +11,21 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Setup Node.js (For Installer Assets)
+      uses: actions/setup-node@v4
+      with:
+        node-node: '20'
+
+    - name: Install Node Dependencies & Generate Bitmaps
+      run: |
+        npm install
+        node build/generate-installer-bitmaps.js
+      continue-on-error: true
+
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
 
-    - name: Run Scripts
+    - name: Run Launcher Scripts
       shell: powershell
       run: |
         cd native
