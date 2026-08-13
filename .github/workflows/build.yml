@@ -1,17 +1,29 @@
-# Builds the release exe, assembles the folder, and compiles the NSIS installer.
-$ErrorActionPreference = 'Stop'
-$root = Split-Path -Parent $MyInvocation.MyCommand.Path   # native
+name: Build Installer
 
-& (Join-Path $root 'package.ps1')
+on:
+  workflow_dispatch:
 
-$makensis = Join-Path $root 'third_party\nsis\nsis-3.10\makensis.exe'
-if (-not (Test-Path $makensis)) { throw 'makensis not found' }
+jobs:
+  build:
+    runs-on: windows-latest
 
-Push-Location $root
-try { & $makensis '/V2' 'installer.nsi' } finally { Pop-Location }
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-$setup = Join-Path (Split-Path -Parent $root) 'dist-native\justice-launcher-setup.exe'
-if (Test-Path $setup) {
-    $mb = [math]::Round((Get-Item $setup).Length/1MB, 1)
-    Write-Host "[installer] $setup  ($mb MB)" -ForegroundColor Green
-} else { Write-Error 'installer not produced' }
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Run Scripts
+      shell: powershell
+      run: |
+        cd native
+        .\bootstrap.ps1
+        .\build.ps1
+        .\build-installer.ps1
+
+    - name: Upload Setup File
+      uses: actions/upload-artifact@v4
+      with:
+        name: justice-launcher-setup
+        path: native/dist-native/justice-launcher-setup.exe
